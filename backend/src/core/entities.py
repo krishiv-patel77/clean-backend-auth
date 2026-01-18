@@ -1,0 +1,51 @@
+import uuid 
+
+from sqlalchemy import func, Column, DateTime, ForeignKey, Text, String
+from sqlalchemy.dialects.postgresql import UUID, JSONB      # JSONB is for storing JSON data as binary within the database
+from sqlalchemy.orm import relationship
+
+from src.database.core import Base
+
+class User(Base):
+    __tablename__ = "user"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    university = Column(String(255), nullable=True)
+    time_created = Column(DateTime(timezone=True), server_default=func.now())
+    time_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    def __repr__(self):
+        return f"<User(id='{self.id}', first_name='{self.first_name}', last_name='{self.last_name}'), email='{self.email}')>"
+
+
+class Email_Generations(Base):
+    __tablename__ = "email_generations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('user.id', ondelete="CASCADE"), nullable=False)
+    linkedin_url = Column(Text, nullable=False)
+    generated_emails = Column(JSONB, nullable=False)
+    time_created = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User")
+
+"""
+For generated emails, even though it is not enforced, we are going to store a list of dicts like the following:
+
+[
+    {
+    "content": "generated content for variation 1"
+    },
+    {
+    "content": "generated content for variation 2" 
+    },
+    etc
+]
+
+Or, if you plan to only use one variation, then just stick to uploading a single JSON object with the email and any details about
+it that you plan to include
+"""
