@@ -34,7 +34,7 @@ def register(db: DB_Session, register_user_data: RegisterUserRequest) -> None:
         if existing_user:
             logger.error("Failed to Register User. User already exists.")
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User with this email already exists")     # 409 conflict indicates a valid request but it conflicts with the existing state of the application
-        
+
         # Create a new user entity
         user = User(
             id = uuid4(),
@@ -53,8 +53,6 @@ def register(db: DB_Session, register_user_data: RegisterUserRequest) -> None:
         db.rollback()
         logger.error(f"Failed to register user: {register_user_data.email}. Error: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to register user")
-    finally:
-        return None
 
 
 @router.post("/token", response_model=Token)

@@ -22,4 +22,5 @@ dependencies = [
     "sqlalchemy>=2.0.45",
     "uvicorn>=0.40.0",
     "python-multipart>=0.0.21",
+    "bcrypt==4.1.2",
 ]
