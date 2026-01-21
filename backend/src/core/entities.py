@@ -1,6 +1,6 @@
 import uuid 
 
-from sqlalchemy import func, Column, DateTime, ForeignKey, Text, String
+from sqlalchemy import func, Column, DateTime, ForeignKey, Text, String, Integer, text
 from sqlalchemy.dialects.postgresql import UUID, JSONB      # JSONB is for storing JSON data as binary within the database
 from sqlalchemy.orm import relationship
 
@@ -15,6 +15,7 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     university = Column(String(255), nullable=True)
+    token_version = Column(Integer, nullable=False, server_default=text("1"), default=1)
     time_created = Column(DateTime(timezone=True), server_default=func.now())
     time_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

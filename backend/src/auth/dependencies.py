@@ -45,7 +45,7 @@ def get_current_user(token: Bearer_Token, db: DB_Session) -> User:
                             detail="Failed to fetch current user. Invalid Access Token",
                             headers={"WWW-Authenticate": "Bearer"})
     
-    token_id = UUID(token_data['id'])
+    token_id = UUID(token_data['sub'])
     user = db.query(User).filter(User.id == token_id).first()
 
     if not user:
@@ -53,6 +53,11 @@ def get_current_user(token: Bearer_Token, db: DB_Session) -> User:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"})
+    
+    if token_data['token_version'] != user.token_version: 
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token revoked"
+        )
     
     # Return the ORM object for internal manipulations
     return user

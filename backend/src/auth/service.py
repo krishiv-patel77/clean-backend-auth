@@ -22,17 +22,18 @@ def authenticate_user(username: str, password: str, db) -> User | None:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt_context.verify(plain_password, hashed_password)
 
-def create_token(email: str, user_id: UUID, expiry: timedelta, SECRET_KEY: str, ALGORITHM: str, refresh: bool):
+def create_token(user_id: UUID, token_version: int, expiry: timedelta, SECRET_KEY: str, ALGORITHM: str, refresh: bool):
     if refresh:
         token_type = "refresh"
     else:
         token_type = "access"
 
     encode = {
-        'sub': email,
-        'id': str(user_id),
-        'exp': datetime.now(timezone.utc) + expiry,
-        'type': token_type
+        "sub": str(user_id),
+        "token_version": token_version,
+        "type": token_type,
+        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(timezone.utc) + expiry,
     }
 
     return jwt.encode(payload=encode, key=SECRET_KEY, algorithm=ALGORITHM)

@@ -60,6 +60,7 @@ def change_password(pwd_info: ChangePasswordRequest, user: CurrentUser, db: DB_S
         # Create a new password hash using the new password
         new_pwd_hash = get_password_hash(password=pwd_info.new_password)
         user.password_hash = new_pwd_hash # type: ignore
+        user.token_version += 1 # type: ignore
 
         db.commit()
         logger.info(f"Password for user {user.email} successfully changed")

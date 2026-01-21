@@ -80,16 +80,16 @@ def login(db: DB_Session, form_data: Annotated[OAuth2PasswordRequestForm, Depend
                                 headers={"WWW-Authenticate": "Bearer"})     # Headers are required for 401 Unauthorized
         
         access_token = create_token(
-            email=user.email,  # type: ignore
             user_id=user.id,   # type: ignore
+            token_version=user.token_version, # type: ignore
             expiry=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES), # type: ignore
             SECRET_KEY=settings.SECRET_KEY, 
             ALGORITHM=settings.ALGORITHM, 
             refresh=False)
         
         refresh_token = create_token(
-            email=user.email,  # type: ignore
             user_id=user.id,   # type: ignore
+            token_version=user.token_version, #type: ignore
             expiry=timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES), 
             SECRET_KEY=settings.SECRET_KEY, 
             ALGORITHM=settings.ALGORITHM, 
@@ -106,7 +106,7 @@ def login(db: DB_Session, form_data: Annotated[OAuth2PasswordRequestForm, Depend
 
 
 @router.post("/refresh", response_model=Token)
-def refresh(payload: RefreshTokenRequest) -> Token:
+def refresh(payload: RefreshTokenRequest, db: DB_Session) -> Token:
     """
     Docstring for refresh
     
@@ -131,9 +131,25 @@ def refresh(payload: RefreshTokenRequest) -> Token:
             detail="Invalid or expired refresh token",
             headers={"WWW-Authenticate": "Bearer"})
     
+    user_id = UUID(token_data['sub'])
+
+    # Fetch the user to verify token_version and sub
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"})
+
+    if user.token_version != token_data['token_version']:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token revoked"
+        )
+    
     # If we have a valid refresh_token, then using the token_data, create a new access token
-    new_access_token = create_token(email=token_data['sub'],
-                                    user_id=UUID(token_data['id']),
+    new_access_token = create_token(user_id=UUID(token_data['sub']),
+                                    token_version=token_data['token_version'],
                                     expiry=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
                                     SECRET_KEY=settings.SECRET_KEY,
                                     ALGORITHM=settings.ALGORITHM,
