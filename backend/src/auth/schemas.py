@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from uuid import UUID
+from typing import Optional
 
 class RegisterUserRequest(BaseModel):
     email: EmailStr
@@ -16,11 +17,3 @@ class Token(BaseModel):
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
-class CurrentUserResponse(BaseModel):
-    id: UUID
-    first_name: str
-    last_name: str
-    email: str
-    university: str | None      # University is an optional field
-    time_created: datetime
-    time_updated: datetime

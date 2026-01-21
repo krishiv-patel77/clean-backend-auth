@@ -5,7 +5,6 @@ from starlette import status
 from fastapi.security import OAuth2PasswordBearer
 from src.database.core import DB_Session
 from src.auth.service import verify_token
-from src.auth.schemas import CurrentUserResponse
 from src.core.config import settings
 from src.core.entities import User
 from typing import Annotated
@@ -20,7 +19,7 @@ oauth2_bearer = OAuth2PasswordBearer(tokenUrl='auth/token')
 Bearer_Token = Annotated[str, Depends(oauth2_bearer)]       # Basically, Bearer_Token is of type str but it also depends on oauth2_bearer to extract the token from the authorization header
 
 # Dependency function which also depends on the 
-def get_current_user(token: Bearer_Token, db: DB_Session) -> CurrentUserResponse:
+def get_current_user(token: Bearer_Token, db: DB_Session) -> User:
     """
     Docstring for get_current_user
     
@@ -55,17 +54,12 @@ def get_current_user(token: Bearer_Token, db: DB_Session) -> CurrentUserResponse
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"})
     
-    return CurrentUserResponse(id=user.id, # type: ignore
-                               first_name=user.first_name, # type: ignore
-                               last_name=user.last_name, # type: ignore
-                               email=user.email, # type: ignore
-                               university=user.university, # type: ignore
-                               time_created=user.time_created, # type: ignore
-                               time_updated=user.time_updated) # type: ignore
+    # Return the ORM object for internal manipulations
+    return user
 
 
 # This is the object that will be imported and used which depends on get_current_user which essentially extracts the bearer token from the header, verifies it, and return the user data
-CurrentUser = Annotated[CurrentUserResponse, Depends(get_current_user)]
+CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
 
