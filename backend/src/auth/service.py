@@ -3,6 +3,7 @@ from jwt import PyJWTError
 from typing import Dict, Any
 from datetime import timedelta, datetime, timezone
 from uuid import UUID
+from sqlalchemy import select
 from passlib.context import CryptContext
 from src.core.entities import User
 
@@ -11,9 +12,10 @@ bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 def get_password_hash(password: str) -> str:
     return bcrypt_context.hash(password)
 
-def authenticate_user(username: str, password: str, db) -> User | None:
-    user = db.query(User).filter(User.email == username).first()
-
+async def authenticate_user(username: str, password: str, db) -> User | None:
+    result = await db.execute(select(User).filter(User.email == username))
+    user = result.scalars().first()
+    
     # If the user does not exist or the password is incorrect, return None
     if not user or not verify_password(password, user.password_hash): 
         return None

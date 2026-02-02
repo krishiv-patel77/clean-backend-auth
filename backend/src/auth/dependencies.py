@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import Depends, HTTPException
 from starlette import status
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy import select
 from src.database.core import DB_Session
 from src.auth.service import verify_token
 from src.core.config import settings
@@ -18,11 +19,11 @@ the access_token. The only reason we use the tokenUrl specified is for documenta
 oauth2_bearer = OAuth2PasswordBearer(tokenUrl='auth/token')
 Bearer_Token = Annotated[str, Depends(oauth2_bearer)]       # Basically, Bearer_Token is of type str but it also depends on oauth2_bearer to extract the token from the authorization header
 
-# Dependency function which also depends on the 
-def get_current_user(token: Bearer_Token, db: DB_Session) -> User:
+# Dependency function which also depends on the
+async def get_current_user(token: Bearer_Token, db: DB_Session) -> User:
     """
     Docstring for get_current_user
-    
+
     :param token: this is another dependency which extracts the bearer token from the authorization header
     :type token: Bearer_Token
     :param db: this is used for querying via the extracted token data to get the full user object
@@ -33,32 +34,33 @@ def get_current_user(token: Bearer_Token, db: DB_Session) -> User:
     This function should verify the token, extract the user relevant metadata from the token, query the database for all the information about this user,
     populate the CurrentUserResponse object with the data it recieves and return that object
     """
-    
+
     # First verify the access token
     token_data = verify_token(token=token,
                               SECRET_KEY=settings.SECRET_KEY,
                               ALGORITHM=settings.ALGORITHM,
                               refresh=False)
-    
+
     if not token_data:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Failed to fetch current user. Invalid Access Token",
                             headers={"WWW-Authenticate": "Bearer"})
-    
+
     token_id = UUID(token_data['sub'])
-    user = db.query(User).filter(User.id == token_id).first()
+    result = await db.execute(select(User).filter(User.id == token_id))
+    user = result.scalars().first()
 
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"})
-    
-    if token_data['token_version'] != user.token_version: 
+
+    if token_data['token_version'] != user.token_version:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Token revoked"
         )
-    
+
     # Return the ORM object for internal manipulations
     return user
 

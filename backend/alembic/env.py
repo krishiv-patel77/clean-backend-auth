@@ -10,7 +10,7 @@ Custom Added Imports: Base for metadata && DATABASE_URL from config file
 """
 from src.database.core import Base
 from src.core.config import settings
-from src.core.entities import User, Email_Generations
+from src.core.entities import User
 # ==============================================================================================================
 
 # this is the Alembic Config object, which provides
